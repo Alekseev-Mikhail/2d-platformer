@@ -3,33 +3,47 @@ package io.github
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.math.Rectangle
 
+const val FALL_SPEED = 9.8f
+
 class Player(val rectangle: Rectangle, val texture: Texture) {
     private var isJumping = false
+    private var isMoving = false
+    private var isWasMoving = false
     private var isFalling = false
     private var jumpTime = 0f
     private var deltaJump = 0.1f
     private var deltaFall = 0f
-    var speed = 7f
+    var isForward = true
+    var speed = 6f
 
     fun rest(delta: Float, blocks: List<Block>) {
         if (isJumping) {
-            val newRectangle = Rectangle(rectangle.x, rectangle.y + 7f / deltaJump, rectangle.width, rectangle.height)
+            val newY = rectangle.y + speed / deltaJump
+            var newX = rectangle.x
+            if (isWasMoving) {
+                if (isForward) newX += speed / 2 else newX -= speed / 2
+            }
+            val newRectangle = Rectangle(newX, newY, rectangle.width, rectangle.height)
             if (!isOverlaps(blocks, newRectangle)) jump(delta, newRectangle) else jumpFinish()
         } else {
-            val newRectangle = Rectangle(rectangle.x, rectangle.y - 9.8f * deltaFall, rectangle.width, rectangle.height)
+            val newRectangle = Rectangle(rectangle.x, rectangle.y - FALL_SPEED * deltaFall, rectangle.width, rectangle.height)
             if (!isOverlaps(blocks, newRectangle)) fall(newRectangle) else fallFinish()
         }
+        isMoving = false
     }
 
-    fun move(deltaX: Float, blocks: List<Block>) {
+    fun move(deltaX: Float, blocks: List<Block>, isForward: Boolean) {
         val newRectangle = Rectangle()
         newRectangle.set(rectangle)
         newRectangle.x += deltaX
         if (!isOverlaps(blocks, newRectangle)) rectangle.set(newRectangle)
+        isMoving = true
+        this.isForward = isForward
     }
 
     fun jump() {
         if (!isFalling) isJumping = true
+        isWasMoving = isMoving
     }
 
     fun dispose() {
@@ -48,6 +62,7 @@ class Player(val rectangle: Rectangle, val texture: Texture) {
     private fun jumpFinish() {
         isJumping = false
         isFalling = true
+        isWasMoving = false
         jumpTime = 0f
         deltaJump = 0.1f
     }
